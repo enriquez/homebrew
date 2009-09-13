@@ -13,4 +13,12 @@ class Rubygems <Formula
     system "#{HOMEBREW_PREFIX}/bin/ruby setup.rb"
     system "ln -s #{HOMEBREW_CELLAR}/ruby/1.8.7-p174/bin/gem #{HOMEBREW_PREFIX}/bin/gem"
   end
+  
+  def caveats
+    <<-EOS
+Set your environment variables:
+export GEM_HOME="/usr/local/Cellar/ruby/1.8.7-p174/lib/ruby/gems"
+export PATH="$GEM_HOME/bin:$PATH"
+    EOS
+  end
 end
