@@ -318,7 +318,7 @@ class BeerTasting <Test::Unit::TestCase
   
   FOOBAR='foo-bar'
   def test_formula_funcs
-    classname=Formula.class(FOOBAR)
+    classname=Formula.class_s(FOOBAR)
     path=Formula.path(FOOBAR)
     
     assert_equal "FooBar", classname
@@ -372,6 +372,11 @@ class BeerTasting <Test::Unit::TestCase
     d=HOMEBREW_CELLAR+'foo-0.1.9'
     d.mkpath
     assert_equal '0.1.9', d.version
+  end
+  
+  def test_lame_version_style
+    f=MockFormula.new 'http://kent.dl.sourceforge.net/sourceforge/lame/lame-398-2.tar.gz'
+    assert_equal '398-2', f.version
   end
   
   def test_ruby_version_style
@@ -465,5 +470,11 @@ class BeerTasting <Test::Unit::TestCase
     end
     
     assert_raises(RuntimeError) {Pathname.getwd.install 'non_existant_file'}
+  end
+  
+  def test_formula_class_func
+    assert_equal Formula.class_s('s-lang'), 'SLang'
+    assert_equal Formula.class_s('pkg-config'), 'PkgConfig'
+    assert_equal Formula.class_s('foo_bar'), 'FooBar'
   end
 end
