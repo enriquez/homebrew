@@ -179,6 +179,8 @@ paths=ENV['PATH'].split(':').reject do |p|
 end
 ENV['PATH']=paths*':'
 
+# Clear CDPATH to avoid make issues that depend on changing directories
+ENV.delete('CDPATH')
 
 def inreplace(path, before, after)
   before=Regexp.escape before.to_s
@@ -186,6 +188,7 @@ def inreplace(path, before, after)
   after=after.to_s
   after.gsub! "\\", "\\\\"
   after.gsub! "/", "\\/"
+  after.gsub! "$", "\\$"
 
   # FIXME use proper Ruby for teh exceptions!
   safe_system "perl", "-pi", "-e", "s/#{before}/#{after}/g", path

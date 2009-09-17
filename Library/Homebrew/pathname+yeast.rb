@@ -118,7 +118,7 @@ class Pathname
 
     # eg. foobar-4.5.1-1
     # eg. ruby-1.9.1-p243
-    /-((\d+\.)*\d\.\d+-p?\d+)$/.match stem
+    /-((\d+\.)*\d\.\d+-(p|rc)?\d+)$/.match stem
     return $1 if $1
     
     # eg. lame-398-1
@@ -140,7 +140,11 @@ class Pathname
     # eg. foobar4.5.1
     /((\d+\.)*\d+)$/.match stem
     return $1 if $1
-
+    
+    # eg foobar-4.5.0-bin
+    /-((\d+\.)*\d+-bin)$/.match stem
+    return $1 if $1
+    
     # eg. otp_src_R13B (this is erlang's style)
     # eg. astyle_1.23_macosx.tar.gz
     stem.scan /_([^_]+)/ do |match|

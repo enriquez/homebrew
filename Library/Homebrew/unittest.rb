@@ -14,7 +14,7 @@ require 'utils'
 require 'brew.h'
 require 'hardware.rb'
 
-# these are defined in bin/brew, but we don't want to break our actual
+# these are defined in global.rb, but we don't want to break our actual
 # homebrew tree, and we do want to test everything :)
 HOMEBREW_PREFIX=Pathname.new '/tmp/testbrew/prefix'
 HOMEBREW_CACHE=HOMEBREW_PREFIX.parent+"cache"
@@ -421,10 +421,13 @@ class BeerTasting <Test::Unit::TestCase
   end
 
   def test_arch_for_command
-    # NOTE only works on Snow Leopard I bet, pick a better file!
     arches=arch_for_command '/usr/bin/svn'
-    assert_equal 3, arches.count
-    assert arches.include?(:x86_64)
+    if `sw_vers -productVersion` =~ /10\.(\d)\.(\d+)/ and $1.to_i >= 6
+      assert_equal 3, arches.count
+      assert arches.include?(:x86_64)
+    else
+      assert_equal 2, arches.count
+    end
     assert arches.include?(:i386)
     assert arches.include?(:ppc7400)
   end
@@ -476,5 +479,10 @@ class BeerTasting <Test::Unit::TestCase
     assert_equal Formula.class_s('s-lang'), 'SLang'
     assert_equal Formula.class_s('pkg-config'), 'PkgConfig'
     assert_equal Formula.class_s('foo_bar'), 'FooBar'
+  end
+  
+  def test_version_style_rc
+    f=MockFormula.new 'http://ftp.mozilla.org/pub/mozilla.org/js/js-1.8.0-rc1.tar.gz'
+    assert_equal '1.8.0-rc1', f.version
   end
 end

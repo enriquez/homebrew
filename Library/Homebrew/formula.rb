@@ -92,15 +92,16 @@ class Formula
   def info; prefix+'share'+'info' end
   def include; prefix+'include' end
   def share; prefix+'share' end
+  def var; prefix.parent+'var' end
 
   # reimplement if we don't autodetect the download strategy you require
   def download_strategy
     case url
-      when %r[^svn://] then SubversionDownloadStrategy
-      when %r[^git://] then GitDownloadStrategy
-      when %r[^http://(.+?\.)?googlecode\.com/svn] then SubversionDownloadStrategy
-      when %r[^http://svn.apache.org/repos/] then SubversionDownloadStrategy
-      else HttpDownloadStrategy
+    when %r[^svn://] then SubversionDownloadStrategy
+    when %r[^git://] then GitDownloadStrategy
+    when %r[^http://(.+?\.)?googlecode\.com/svn] then SubversionDownloadStrategy
+    when %r[^http://svn.apache.org/repos/] then SubversionDownloadStrategy
+    else HttpDownloadStrategy
     end
   end
   # tell the user about any caveats regarding this package
@@ -113,7 +114,9 @@ class Formula
   #     :p1 =>  'http://bar.com/patch2',
   #     :p2 => ['http://moo.com/patch5', 'http://moo.com/patch6']
   #   }
-  def patches; [] end
+  # The final option is to return DATA, then put a diff after __END__ and you
+  # can still return a Hash with DATA as the value for a patch level key.
+  def patches; end
   # reimplement and specify dependencies
   def deps; end
   # sometimes the clean process breaks things, return true to skip anything
@@ -127,6 +130,8 @@ class Formula
     stage do
       begin
         patch
+        # we allow formulas to do anything they want to the Ruby process
+        # so load any deps before this point! And exit asap afterwards
         yield self
       rescue Interrupt, RuntimeError, SystemCallError => e
         raise unless ARGV.debug?
@@ -157,7 +162,13 @@ class Formula
   end
 
   def self.factory name
-    require self.path(name)
+    path = Pathname.new(name)
+    if path.absolute?
+      require name
+      name = path.stem
+    else
+      require self.path(name)
+    end
     return eval(self.class_s(name)).new(name)
   rescue LoadError
     raise FormulaUnavailableError.new(name)
@@ -241,32 +252,65 @@ private
       yield
     end
   end
-
+  
   def patch
-    return if patches.empty?
+    return if patches.nil?
+
     ohai "Patching"
-    if patches.kind_of? Hash
-      patch_args=[]
-      curl_args=[]
-      n=0
-      patches.each do |arg, urls|
-        urls.each do |url|
-          dst='%03d-homebrew.patch' % n+=1
-          curl_args<<url<<'-o'<<dst
-          patch_args<<["-#{arg}",'-i',dst]
-        end
-      end
-      # downloading all at once is much more efficient, espeically for FTP
-      curl *curl_args
-      patch_args.each do |args|
-        # -f means it doesn't prompt the user if there are errors, if just
-        # exits with non-zero status
-        safe_system 'patch', '-f', *args
-      end
+    if not patches.kind_of? Hash
+      # We assume -p0
+      patch_defns = { :p1 => patches }
     else
-      ff=(1..patches.length).collect {|n| '%03d-homebrew.patch'%n}
-      curl *patches+ff.collect {|f|"-o#{f}"}
-      ff.each {|f| safe_system 'patch', '-p0', '-i', f}
+      patch_defns = patches
+    end
+
+    patch_list=[]
+    n=0
+    patch_defns.each do |arg, urls|
+      # DATA.each does each line, which doesn't work so great
+      urls = [urls] unless urls.kind_of? Array
+
+      urls.each do |url|
+        p = {:filename => '%03d-homebrew.diff' % n+=1, :compression => false}
+
+        if defined? DATA and url == DATA
+          pn=Pathname.new p[:filename]
+          pn.write DATA.read
+        elsif url =~ %r[^\w+\://]
+          out_fn = p[:filename]
+          case url
+          when /\.gz$/
+            p[:compression] = :gzip
+            out_fn += '.gz'
+          when /\.bz2$/
+            p[:compression] = :bzip2
+            out_fn += '.bz2'
+          end
+          p[:curl_args] = [url, '-o', out_fn]
+        else
+          # it's a file on the local filesystem
+          p[:filename] = url
+        end
+
+        p[:args] = ["-#{arg}", '-i', p[:filename]]
+
+        patch_list << p
+      end
+    end
+    
+    return if patch_list.empty?
+
+    # downloading all at once is much more efficient, espeically for FTP
+    curl *(patch_list.collect{|p| p[:curl_args]}.select{|p| p}.flatten)
+
+    patch_list.each do |p|
+      case p[:compression]
+        when :gzip  then safe_system "gunzip",  p[:filename]+'.gz'
+        when :bzip2 then safe_system "bunzip2", p[:filename]+'.bz2'
+      end
+      # -f means it doesn't prompt the user if there are errors, if just
+      # exits with non-zero status
+      safe_system 'patch', '-f', *(p[:args])
     end
   end
 
