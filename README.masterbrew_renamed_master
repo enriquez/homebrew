@@ -1,0 +1,45 @@
+Because almost all git tools including GitHub expect the main branch to be
+called master and not masterbrew, I am renaming the main branch.
+
+When I originally lol'd at the ingenuity off sticking this reference to the
+brewing process in the git internals of the project, I realised it may be a
+mistake. These things usually are; stick with conventions unless there's a
+good reason not too!
+
+So I apologise…
+
+But it's relatively easy for you to modify your remotes to pull from master
+instead of masterbrew, just edit .git/config and change the remote for mxcl.
+
+
+I ask you take this opportunity to read the contribution guidelines here:
+
+<http://wiki.github.com/mxcl/homebrew/contributing>
+
+With this many forks I need a clean network diagram in GitX or on GitHub in
+order to see what to pull. Also I avoid merge commits in my tree so it's more
+readable for everyone. I can't pull cleanly unless your branch is a direct
+descendent of mine. So if you don't fast forward your branch I cherry-pick.
+Cherry-picking is time consuming, so I'd much rather pull! So I'd appreciate
+it if you could keep contributions in a fast forwarded branch. Also
+cherry-picking is bad for you. You see how you have two copies of that commit
+in your timeline? That's the cherry-pick's fault [1].
+
+Contributions to the core can be merged, I think this is fine. The core
+changes and keeping it rebased can be a PITA. I'm just talking about formulae
+really. Unless the core contribution is a few lines. Then please keep it fast
+forwarded.
+
+
+Finally Homebrew now has a twitter account:
+
+<http://twitter.com/machomebrew>
+
+The mac prefix is not something I want to stick on references to the project
+in general. But homebrew was taken on freenode and twitter. So it may become
+a regular thing due to circumstance :/
+
+
+[1] Many people correct this by throwing away the branch that was
+    cherry-picked. Which makes it an advantage to work in multiple branches
+    and keep one a perfect clone of mine. Indirect and Josh work this way.

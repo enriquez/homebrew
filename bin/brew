@@ -65,6 +65,8 @@ begin
         puts "You must specify a formula. Search for available formulae with `brew search'."
         exit 0
       end
+      
+      raise "Cannot write to #{HOMEBREW_PREFIX}" unless HOMEBREW_PREFIX.writable?
 
       require 'brewkit'
 
@@ -110,6 +112,21 @@ begin
       end
 
 
+    when 'up', 'update'
+      require 'update'
+      updater = RefreshBrew.new
+      old_revision = updater.current_revision
+      unless updater.update_from_masterbrew!
+        ohai "Already up-to-date."
+      else
+        ohai "Updated Homebrew from #{old_revision} to #{updater.current_revision}."
+        if updater.pending_formulae_changes?
+          ohai "The following formulae were updated: #{updater.updated_formulae.join(', ')}"
+        else
+          ohai "No formulae were updated." unless updater.pending_formulae_changes?
+        end
+      end
+
     when 'ln', 'link'
       ARGV.kegs.each {|keg| puts "#{keg.link} links created for #{keg}"}
 
@@ -125,12 +142,6 @@ begin
         keg.uninstall
       end
       prune
-
-    when 'up', 'update'
-      puts "You can't yet update :( But you can try:"
-      puts "    git pull"
-      puts "    brew rm foo"
-      puts "    brew install foo"
 
     when 'prune'
       prune
