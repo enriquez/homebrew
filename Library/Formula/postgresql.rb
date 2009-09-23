@@ -8,6 +8,7 @@ class Postgresql <Formula
   def install
 
     configure_args = [
+        "--enable-thread-safety",
         "--with-bonjour",
         "--with-python",
         "--with-perl",
@@ -18,12 +19,17 @@ class Postgresql <Formula
         "--with-libxslt",
         "--prefix=#{prefix}",
         "--disable-debug",
-        "--disable-dependency-tracking"
+        "--disable-dependency-tracking",
+        "ARCHFLAGS='-arch x86_64'"
     ]
 
     system "./configure", *configure_args
     system "make install"
 
+  end
+
+  def skip_clean? path
+    true
   end
 
   def caveats
